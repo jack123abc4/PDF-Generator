@@ -6,7 +6,6 @@ import os
 pdf_w=210 # A4 width
 pdf_h=297 # A4 height
 
-
 SPREADSHEET_NAME = "deaths.xlsx" # replace with Excel file name
 
 # PDF class
@@ -35,7 +34,11 @@ class PDF(FPDF):
 # imports Excel sheet
 # current format - first two columns are Last Name, First Name
 # first row contains headers and is ignored when parsing
-book = xlrd.open_workbook(SPREADSHEET_NAME)
+try:
+  book = xlrd.open_workbook(SPREADSHEET_NAME)
+except:
+  print('ERROR: Spreadsheet "' + SPREADSHEET_NAME + '" not found. Make sure to place spreadsheet within the same folder and change the variable "SPREADSHEET_NAME".')
+  quit()
 sheet = book.sheet_by_index(0)
 width = sheet.ncols
 height = sheet.nrows
