@@ -53,7 +53,7 @@ for y in range(1,height):
 
 for sl in clients:
   # generates PDF title
-  pdfTitle = str(sl[1].value + " " + sl[0].value)
+  pdfTitle = str(sl[1].value) + " " + str(sl[0].value)
   
 
 
@@ -86,7 +86,7 @@ for sl in clients:
   # outputs PDF to folder
   if not os.path.exists("PDFs/"):
     os.makedirs("PDFs")
-  pdf.output("PDFs/" + sl[0].value+","+sl[1].value+".pdf",'F')
-  print('File exported: "' + sl[0].value+','+sl[1].value+'.pdf"')
+  pdf.output("PDFs/" + str(sl[0].value) +"," + str(sl[1].value) +".pdf",'F')
+  print('File exported: "' + str(sl[0].value) +','+ str(sl[1].value) +'.pdf"')
 
 print("\nFinished.")
