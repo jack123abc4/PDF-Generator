@@ -1,14 +1,11 @@
 from fpdf import FPDF # PDF handler
 import xlrd # Excel handler
-import os
-
-
-pdf_w=210 # A4 width
-pdf_h=297 # A4 height
+import os # to handle directories
+import sys
 
 # PDF class
 class PDF(FPDF):
-    # border
+    # draws border
     def lines(self):
         self.rect(5.0, 5.0, 205.9,269.4)
     
@@ -27,46 +24,51 @@ class PDF(FPDF):
       self.multi_cell(0,10,s)
       self.lines()
 
-def clear():
+# wipes console
+def clear(): 
   print("\033[H\033[J")
 
-# tracks spreadsheets
+# delete last line
+def delete_last_lines(n=1):
+  CURSOR_UP_ONE = '\x1b[1A' 
+  ERASE_LINE = '\x1b[2K'  
+  for _ in range(n): 
+      sys.stdout.write(CURSOR_UP_ONE) 
+      sys.stdout.write(ERASE_LINE) 
+
+# locates spreadsheets in directory
 sheetsInDirectory = []
-termBody = ""
 for file in os.listdir():
   if file.endswith(".xlsx"):
     sheetsInDirectory.append(str(os.path.basename(file)))
-
 if len(sheetsInDirectory) == 0:
   print("No spreadsheets found.\nFinished.")
   quit()
 elif len(sheetsInDirectory) == 1:
-  termBody += "1 spreadsheet found.\n"
+  print("1 spreadsheet found.")
 else:
-  termBody += str(len(sheetsInDirectory)) + " spreadsheets found.\n"
+  print(str(len(sheetsInDirectory)) + " spreadsheets found.")
 
-termBody += "\n"
+# user input - convert all? takes 'y' or 'n', case insensitive
 for p in sheetsInDirectory:
-  termBody += '- "' + p + '"\n'
-termBody += "\nConvert all? (Y/N) "
-
-choice = ""
+  print('- "' + p + '"')
+choice = input("Convert all? (Y/N) ").lower()
 sheetsToConvert = []
 while choice != "y" and choice != "n":
-  clear()
-  print (termBody,end="")
-  choice = input().lower()
-termBody += choice + "\n"
+  delete_last_lines()
+  choice = input("Convert all? (Y/N) ").lower()
+
+
+# convert all = 'n' - takes user input to select sheets to convert
 if choice == "n":
   for p in sheetsInDirectory:
-    choice = ""
+    choice = input('Convert "' + p + '"? (Y/N) ')
     while choice != "y" and choice != "n":
-      clear()
-      print (termBody,end="")
+      delete_last_lines()
       choice = input('Convert "' + p + '"? (Y/N) ')
-    termBody += 'Convert "' + p + '"? (Y/N) ' + choice + "\n"
     if choice == "y":
       sheetsToConvert.append(p)
+# convert all = 'y'
 else:
   for p in sheetsInDirectory:
     sheetsToConvert.append(p)
@@ -92,18 +94,19 @@ for p in sheetsToConvert:
   for sl in clients:
     # generates PDF title
     pdfTitle = str(sl[1].value + " " + sl[0].value)
-    
-
-
+  
     # generates PDF body
     pdfBody = ""
     headerIndex = 0
     for c in sl:
       pdfBody += str(sheet.cell(0,headerIndex).value) + ": "
       headerIndex += 1
-
-      
-      if (c.ctype == 3): # date formatting
+      if (c.ctype == 2): #number formatting
+        if (c.value.is_integer()):
+          pdfBody += str(int(c.value)) + "\n"
+        else:
+          pdfBody += str(c.value) + "\n"
+      elif (c.ctype == 3): # date formatting
           year, month, day, hour, minute, second = xlrd.xldate_as_tuple(c.value, book.datemode) 
           pdfBody += str(month) + "/" + str(day) + "/" + str(year) + "\n"
       else:
@@ -113,20 +116,30 @@ for p in sheetsToConvert:
     pdf = PDF(format='Letter')
     pdf.add_page()
 
-    # formatting
+    # draws border
     pdf.lines()
 
     # creates text from Excel data
     pdf.titles(pdfTitle)
     pdf.writeLine(pdfBody)
 
-    
-    # outputs PDF to folder
+    # creates main PDF folder
     if not os.path.exists('PDFs'):
       os.makedirs('PDFs')
+
+    # creates folder for sheet
     if not os.path.exists('PDFs/' + p + ' BATCH'):
       os.makedirs('PDFs/' + p + ' BATCH')
-    pdf.output("PDFs/" + p + " BATCH/" + sl[0].value+","+sl[1].value+".pdf",'F')
+
+    # outputs PDF - folder name is "(name of spreadsheet) BATCH"
+    pathName = "PDFs/" + p + " BATCH/"
+    fileName = sl[0].value+","+sl[1].value+".pdf"
+    duplicateFile = 0
+
+    #while os.path.exists(pathName + fileName) :
+    #  duplicateFile += 1
+    #  fileName = fileName + str(duplicateFile)
+    pdf.output(pathName + fileName,'F')
     print('File exported: "' + sl[0].value+','+sl[1].value+'.pdf"')
 
 print("\nFinished.")
